@@ -1,0 +1,75 @@
+onegold_jewellery/
+│
+├── backend/                          # Django Backend
+│   ├── onegold_jewellery/            # Django project settings
+│   │   ├── __init__.py
+│   │   ├── settings.py               # Django settings (including DB, CORS, and static settings)
+│   │   ├── urls.py                   # URL routing
+│   │   ├── wsgi.py                   # WSGI entry point for Gunicorn
+│   │   ├── asgi.py                   # ASGI entry point for async tasks
+│   │
+│   ├── apps/                         # Custom Django apps
+│   │   ├── users/                    # App for user management
+│   │   │   ├── models.py             # User models (custom User if needed)
+│   │   │   ├── views.py              # Views (API endpoints)
+│   │   │   ├── serializers.py        # Serializers for API responses
+│   │   │   ├── urls.py               # URLs for user management
+│   │   │   └── admin.py              # Admin panel registration
+│   │   │
+│   │   ├── products/                 # App for product management
+│   │   │   ├── models.py             # Product models
+│   │   │   ├── views.py              # Product views (CRUD operations)
+│   │   │   ├── serializers.py        # Product serializers
+│   │   │   ├── urls.py               # URL routing for products
+│   │   │   └── admin.py              # Admin configuration for product management
+│   │   │
+│   │   ├── orders/                   # App for order management
+│   │   │   ├── models.py             # Order models
+│   │   │   ├── views.py              # Order views (process orders, status update)
+│   │   │   ├── serializers.py        # Order serializers
+│   │   │   ├── urls.py               # URL routing for order management
+│   │   │   └── admin.py              # Admin config for order processing
+│   │
+│   ├── manage.py                     # Django management script
+│   ├── static/                       # Static files (CSS, JS from React build)
+│   ├── templates/                    # Django HTML templates
+│   │   ├── index.html                # Base template for serving React app
+│   └── requirements.txt              # Backend dependencies
+│
+├── frontend/                         # React Frontend
+│   ├── public/                       # Public assets (index.html, favicon, etc.)
+│   ├── src/                          # React app source files
+│   │   ├── components/               # Reusable React components (UI)
+│   │   │   ├── Navbar.js             # Navbar component
+│   │   │   ├── ProductCard.js        # Product card component
+│   │   │   └── CheckoutForm.js       # Checkout form component
+│   │   ├── pages/                    # React app pages (Home, Product, etc.)
+│   │   │   ├── Home.js               # Home page component
+│   │   │   ├── ProductPage.js        # Product details page
+│   │   │   ├── Checkout.js           # Checkout workflow
+│   │   │   ├── UserProfile.js        # User profile page
+│   │   └── App.js                    # Main React app file
+│   │
+│   ├── package.json                  # Frontend dependencies
+│   ├── .env                          # Frontend environment variables (API base URL, etc.)
+│   └── build/                        # Production build (after `npm run build`)
+│
+├── scripts/                          # Deployment and automation scripts
+│   ├── deploy.sh                     # Script for deployment
+│   ├── start.sh                      # Script to start the app (for development)
+│   └── backup_db.sh                  # Optional: Script to backup database
+│
+├── config/                           # Configuration files
+│   ├── nginx/
+│   │   └── nginx.conf                # Nginx configuration (for serving Django + React)
+│   ├── gunicorn/
+│   │   └── gunicorn_config.py        # Gunicorn config (number of workers, timeout, etc.)
+│   └── env/                          # Environment configuration files
+│       ├── .env.example              # Example environment variables file
+│       └── .env                      # Actual environment variables (DB credentials, secret keys)
+│
+├── docker-compose.yml                # Optional: Docker Compose file (if using Docker)
+├── Dockerfile                        # Optional: Dockerfile for containerizing the app
+├── README.md                         # Project documentation
+├── .gitignore                        # Files and directories to ignore in Git
+└── requirements.txt                  # Project Requirements
