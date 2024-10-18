@@ -16,14 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
+from .views import homepage
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    # path('store/' , products ),
-    # path('cart/' , cart ),
-    # path('orders/' , orders ),
-    # path('payment/' , products ),
-    # path('summary/' , cart ),
-    path('products/' , include('products.urls'))
-
+    path('1' , homepage )
 ]
