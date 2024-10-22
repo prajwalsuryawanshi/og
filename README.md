@@ -1,6 +1,6 @@
-# OneGold - E-commerce Jewelry Website
+# onegold - E-commerce Jewelry Website
 
-**OneGold** is an e-commerce platform designed to offer a seamless and luxurious online jewelry shopping experience. The website is built using **React.js** for the frontend, **Django** for the backend, and **PostgreSQL** for the database, ensuring a robust, scalable, and efficient platform.
+**onegold** is an e-commerce platform designed to offer a seamless and luxurious online jewelry shopping experience. The website is built using **React.js** for the frontend, **Django** for the backend, and **PostgreSQL** for the database, ensuring a robust, scalable, and efficient platform.
 
 ## Features
 
