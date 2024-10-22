@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'orders' ,
     'products',
-    'category'
+    'category',
+    'customer',
+    'authenticate'
 ]
 
 MIDDLEWARE = [
@@ -93,6 +95,9 @@ DATABASES = {
     }
 }
 
+
+LOGIN_REDIRECT_URL = 'home'  # Redirect to homepage after login
+LOGOUT_REDIRECT_URL = 'login'  # Redirect to login page after logout
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
