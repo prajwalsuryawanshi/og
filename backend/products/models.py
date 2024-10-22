@@ -1,10 +1,11 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 class Product(models.Model):
     product_id = models.AutoField(primary_key=True)
     product_name = models.CharField(max_length=255)
     product_description = models.TextField()
-    product_images = models.ImageField(upload_to='products/', null=True, blank=True)
+    product_images = ArrayField(models.CharField(max_length=255), blank=True, null=True)  # Array for storing multiple image URLs or paths
     category = models.ForeignKey('category.Category', on_delete=models.CASCADE)  # Assuming Category is in 'catalog' app
     product_price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()

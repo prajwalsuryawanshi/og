@@ -4,6 +4,13 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from products.models import Product
 import json
+from django.shortcuts import render
+
+def template_test(request):
+    context ={
+        'name': 'Aditya'
+    } 
+    return render(request, 'index.html',context)
 
 # Function to list all products
 def product_list(request):
@@ -11,22 +18,30 @@ def product_list(request):
     product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price'))
     return JsonResponse({'products': product_list})
 
-# Function to add a new product
-@csrf_exempt  # Exempt from CSRF for simplicity; adjust for production
+
+@csrf_exempt
 def add_product(request):
     if request.method == 'POST':
         data = json.loads(request.body)
+
+        # Handle product_images, default to an empty array if not provided or empty
+        product_images = data.get('product_images', [])
+        if not product_images:  # If product_images is an empty string or empty list
+            product_images = '{}'
+
         new_product = Product.objects.create(
             product_name=data['product_name'],
             product_description=data['product_description'],
-            product_images=data.get('product_images', None),
-            category_id=data['category_id'],  # Assuming category_id is provided
+            product_images=product_images,  # Ensure valid array format
+            category_id=data['category_id'],
             product_price=data['product_price'],
             stock_quantity=data['stock_quantity']
         )
         return JsonResponse({'product_id': new_product.product_id}, status=201)
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
 
 # Function to update a product's information
 @csrf_exempt
@@ -38,15 +53,24 @@ def update_product(request, product_id):
 
     if request.method == 'PUT':
         data = json.loads(request.body)
+
         product.product_name = data.get('product_name', product.product_name)
         product.product_description = data.get('product_description', product.product_description)
-        product.product_images = data.get('product_images', product.product_images)
+
+        # Handle product_images as a list (assuming multiple images are passed)
+        product_images = data.get('product_images', product.product_images)
+        if isinstance(product_images, list):
+            # Handle it if it's a list (assuming it's an array field in your DB)
+            product.product_images = product_images
+
         product.product_price = data.get('product_price', product.product_price)
         product.stock_quantity = data.get('stock_quantity', product.stock_quantity)
         product.save()
+
         return JsonResponse({'message': 'Product updated successfully'})
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+
 
 # Function to delete a product
 @csrf_exempt
