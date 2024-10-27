@@ -13,6 +13,11 @@ class Address(models.Model):
 
     def __str__(self):
         return f"{self.location}, {self.city}"
+    
+    class Meta:
+        db_table = 'addresses'  # Name of the existing table
+        managed = False  # Don't let Django manage this table (no migrations)
+        
 
 class Customer(models.Model):
     customer_id = models.AutoField(primary_key=True)
@@ -25,3 +30,7 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        db_table = 'customer'  # Name of the existing table
+        managed = False  # Don't let Django manage this table (no migrations)
