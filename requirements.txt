@@ -3,5 +3,6 @@ djangorestframework  # If using Django Rest Framework
 Pillow  # For handling product images
 psycopg2  # PostgreSQL database adapter
 psycopg-binary
+django-filter
 
 # Add any other packages as needed

@@ -1,106 +1,115 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view
+from products.serializers import ProductSerializer
 from .models import Cart
+from customer.models import Customer
 from products.models import Product
+from .serializers import CartSerializer
+from rest_framework import status
 
 @api_view(['POST'])
-def add_to_cart(request, product_id):
-    customer_id = request.user.id  # Get the logged-in user
+def add_to_cart(request):
+    customer_id = request.query_params.get('customer_id')
+    product_id = request.query_params.get('product_id')
+    
+    if not customer_id or not product_id:
+        return Response({'error': 'Both customer_id and product_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        # Retrieve the product instance using the correct field name
-        product = Product.objects.get(product_id=product_id)  # Assuming product_id is the correct field
-    except Product.DoesNotExist:
-        return Response({'message': 'Product not found'}, status=404)
+    customer = get_object_or_404(Customer, pk=customer_id)
 
-    # Create or update the cart item using the Product instance
-    cart_item, created = Cart.objects.get_or_create(customer_id=customer_id, product_id=product_id)  # Use product instance
+    product = get_object_or_404(Product, product_id=product_id)
+
+    cart_item, created = Cart.objects.get_or_create(customer_id=customer, product_id=product)
 
     if not created:
-        # If the item is already in the cart, increase the quantity
         cart_item.qty += 1
     else:
-        # Set initial quantity to 1 if it is newly added to the cart
         cart_item.qty = 1
 
-    # Calculate the total price based on quantity
-    cart_item.total = cart_item.qty * product.product_price  # Use product.product_price
+    cart_item.total = cart_item.qty * product.product_price
     cart_item.save()
 
-    return Response({'message': 'Product added to cart successfully', 'cart_item_qty': cart_item.qty})
-
+    return Response({
+        'message': 'Product added to cart successfully',
+        'cart_item_qty': cart_item.qty,
+        'cart_total': cart_item.total
+    })
 
 
 @api_view(['POST'])
-def remove_from_cart(request, product_id):
-    customer_id = request.user.id
+def update_cart(request):
+    customer_id = request.data.get('customer_id')
+    product_id = request.data.get('product_id')
+    action = request.data.get('action')  # 'increase', 'decrease', or 'delete'
+
+    if not customer_id or not product_id or not action:
+        return Response({'error': 'customer_id, product_id, and action are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
-        cart_item = Cart.objects.get(customer_id=customer_id, product_id=product_id)
-        
-        if cart_item.qty > 1:
-            # Decrease the quantity
-            cart_item.qty -= 1
-            cart_item.total = cart_item.qty * cart_item.product.price
-            cart_item.save()
-        else:
-            # Remove item if quantity is 1
+        cart_item = Cart.objects.get(customer_id_id=customer_id, product_id_id=product_id)
+
+        if action == 'increase':
+            cart_item.qty += 1
+        elif action == 'decrease':
+            if cart_item.qty > 1:
+                cart_item.qty -= 1
+            else:
+                return Response({"message": "Cannot decrease quantity below 1."}, status=status.HTTP_400_BAD_REQUEST)
+        elif action == 'delete':
             cart_item.delete()
-        
-        return Response({'message': 'Product removed from cart', 'cart_item_qty': cart_item.qty})
-    
+            return Response({"message": "Item removed from cart."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart_item.total = cart_item.qty * cart_item.product_id.product_price  # Update total price
+        cart_item.save()
+
+        return Response({"message": "Cart updated successfully", "cart_item_qty": cart_item.qty, "cart_total": cart_item.total}, status=status.HTTP_200_OK)
+
     except Cart.DoesNotExist:
-        return Response({'error': 'Product not found in the cart'}, status=404)
-    
+        return Response({"message": "Cart item not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 def view_cart(request):
-    # Get customer_id from query parameters
     customer_id = request.query_params.get('customer_id')
 
     if not customer_id:
-        return Response({"error": "customer_id not provided"}, status=400)
-    
-    print(f"Received customer_id: {customer_id}")
+        return Response({"error": "customer_id not provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Filter the Cart based on customer_id
-    cart_items = Cart.objects.filter(customer_id=customer_id)
+    cart_items = Cart.objects.filter(customer_id_id=customer_id).select_related('product_id')
 
     if not cart_items.exists():
-        print("No cart items found for this customer_id.")
-    
-    # Prepare a response with cart details
+        return Response({"message": "No cart items found."}, status=status.HTTP_404_NOT_FOUND)
+
     cart_data = []
     total_cost = 0
+    total_quantity = 0
+
     for item in cart_items:
         total_cost += item.total
-        cart_data.append({
-            'product_name': item.product.product_name,
-            'product_price': item.product.product_price,
-            'quantity': item.qty,
-            'total': item.total
-        })
+        total_quantity += item.qty
 
-    return Response({'cart_items': cart_data, 'total_cost': total_cost})
+        cart_item_data = CartSerializer(item).data
+        product_data = ProductSerializer(item.product_id).data
+        cart_item_data['product'] = product_data
+        cart_data.append(cart_item_data)
+
+    return Response({'cart_items': cart_data, 'total_cost': total_cost, 'total_qty': total_quantity})
+
 
 @api_view(['GET'])
 def view_all_carts(request):
-    # Retrieve all cart items
     cart_items = Cart.objects.all()
 
     if not cart_items.exists():
-        print("No cart items found.")
-    
-    # Prepare a response with cart details
-    cart_data = []
-    total_cost = 0
-    for item in cart_items:
-        total_cost += item.total
-        cart_data.append({
-            'customer_id': item.customer_id,  # Include customer_id if needed
-            'product_name': item.product.product_name,
-            'product_price': item.product.product_price,
-            'quantity': item.qty,
-            'total': item.total
-        })
+        return Response({"message": "No cart items found."}, status=status.HTTP_404_NOT_FOUND)
 
-    return Response({'cart_items': cart_data, 'total_cost': total_cost})
+    serializer = CartSerializer(cart_items, many=True)
+    total_cost = sum(item.total for item in cart_items)
+
+    return Response({'cart_items': serializer.data, 'total_cost': total_cost})
