@@ -1,25 +1,21 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+from rest_framework.decorators import api_view
 from django.views import View
 from products.models import Product
 import json
 from django.shortcuts import render
 
-def template_test(request):
-    context ={
-        'name': 'Aditya'
-    } 
-    return render(request, 'index.html',context)
-
 # Function to list all products
+@api_view(['GET'])
 def product_list(request):
     products = Product.objects.all()
-    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price'))
+    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price','stock_quantity'))
     return JsonResponse({'products': product_list})
 
 
 @csrf_exempt
+@api_view(['POST'])
 def add_product(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -44,6 +40,7 @@ def add_product(request):
 
 
 # Function to update a product's information
+@api_view(['POST'])
 @csrf_exempt
 def update_product(request, product_id):
     try:
@@ -82,6 +79,8 @@ def delete_product(request, product_id):
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
+
+@api_view(['GET'])
 def filter_products(request):
     products = Product.objects.all()
 
@@ -90,6 +89,7 @@ def filter_products(request):
     category_id = request.GET.get('category_id', None)
     min_price = request.GET.get('min_price', None)
     max_price = request.GET.get('max_price', None)
+    print('Product Name:',product_name,'category Price:',category_id,'min Price:',min_price,'max Price:',max_price)
     
     # Apply filters based on provided criteria
     if product_name:
@@ -102,7 +102,7 @@ def filter_products(request):
         products = products.filter(product_price__lte=max_price)
 
     # Convert the queryset to a list of dictionaries
-    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price'))
+    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price','stock_quantity'))
     
     return JsonResponse({'products': product_list})
 
