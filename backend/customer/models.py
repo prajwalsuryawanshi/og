@@ -27,6 +27,7 @@ class Customer(models.Model):
     phone_no = models.CharField(max_length=15)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    password = models.CharField(max_length=30)
 
     def __str__(self):
         return self.name

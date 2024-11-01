@@ -9,9 +9,23 @@ from django.shortcuts import render
 # Function to list all products
 @api_view(['GET'])
 def product_list(request):
-    products = Product.objects.all()
-    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price','stock_quantity'))
+    products = Product.objects.select_related('category').all()
+    
+    # Create a list with custom field names, including category_name
+    product_list = [
+        {
+            'product_id': product.product_id,
+            'product_name': product.product_name,
+            'product_description': product.product_description,
+            'product_price': product.product_price,
+            'stock_quantity': product.stock_quantity,
+            'category_name': product.category.category_name  # Accessing the related category's name
+        }
+        for product in products
+    ]
+    
     return JsonResponse({'products': product_list})
+
 
 
 @csrf_exempt
@@ -79,17 +93,16 @@ def delete_product(request, product_id):
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
-
 @api_view(['GET'])
 def filter_products(request):
-    products = Product.objects.all()
+    products = Product.objects.select_related('category').all()
 
     # Get filter criteria from query parameters
     product_name = request.GET.get('product_name', None)
     category_id = request.GET.get('category_id', None)
     min_price = request.GET.get('min_price', None)
     max_price = request.GET.get('max_price', None)
-    print('Product Name:',product_name,'category Price:',category_id,'min Price:',min_price,'max Price:',max_price)
+    print('Product Name:', product_name, 'Category ID:', category_id, 'Min Price:', min_price, 'Max Price:', max_price)
     
     # Apply filters based on provided criteria
     if product_name:
@@ -101,8 +114,17 @@ def filter_products(request):
     if max_price:
         products = products.filter(product_price__lte=max_price)
 
-    # Convert the queryset to a list of dictionaries
-    product_list = list(products.values('product_id', 'product_name', 'product_description', 'product_price','stock_quantity'))
-    
-    return JsonResponse({'products': product_list})
+    # Use list comprehension to create the product list with direct attribute access
+    product_list = [
+        {
+            'product_id': product.product_id,
+            'product_name': product.product_name,
+            'product_description': product.product_description,
+            'product_price': product.product_price,
+            'stock_quantity': product.stock_quantity,
+            'category_name': product.category.category_name  # Accessing the related category's name
+        }
+        for product in products
+    ]
 
+    return JsonResponse({'products': product_list})
