@@ -83,9 +83,7 @@ def view_cart(request):
 
     cart_items = Cart.objects.filter(customer_id_id=customer_id).select_related('product_id')
 
-    if not cart_items.exists():
-        return Response({"message": "No cart items found."}, status=status.HTTP_404_NOT_FOUND)
-
+    # Change this part to return empty data instead of an error message
     cart_data = []
     total_cost = 0
     total_quantity = 0
@@ -106,9 +104,7 @@ def view_cart(request):
 def view_all_carts(request):
     cart_items = Cart.objects.all()
 
-    if not cart_items.exists():
-        return Response({"message": "No cart items found."}, status=status.HTTP_404_NOT_FOUND)
-
+    # Change this part to return empty data instead of an error message
     serializer = CartSerializer(cart_items, many=True)
     total_cost = sum(item.total for item in cart_items)
 

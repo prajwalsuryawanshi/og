@@ -4,8 +4,7 @@ from .views import (
     add_product,
     update_product,
     delete_product,
-    filter_products,
-    template_test
+    filter_products
 )
 
 urlpatterns = [
@@ -14,5 +13,4 @@ urlpatterns = [
     path('update/<int:product_id>/', update_product, name='update_product'),  # Update product info
     path('delete/<int:product_id>/', delete_product, name='delete_product'),  # Delete a product
     path('filter/', filter_products, name='filter_products'),  # Filter products
-    path('test/',template_test,name='example')
 ]
