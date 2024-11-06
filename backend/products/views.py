@@ -1,16 +1,15 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
-from django.views import View
-from products.models import Product
+from .models import Product,Review
+from customer.models import Customer
 import json
-from django.shortcuts import render
+from rest_framework.decorators import api_view
 
 # Function to list all products
 @api_view(['GET'])
 def product_list(request):
     products = Product.objects.select_related('category').all()
-    
     # Create a list with custom field names, including category_name
     product_list = [
         {
@@ -25,8 +24,6 @@ def product_list(request):
     ]
     
     return JsonResponse({'products': product_list})
-
-
 
 @csrf_exempt
 @api_view(['POST'])
@@ -50,8 +47,6 @@ def add_product(request):
         return JsonResponse({'product_id': new_product.product_id}, status=201)
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
-
-
 
 # Function to update a product's information
 @api_view(['POST'])
@@ -81,7 +76,6 @@ def update_product(request, product_id):
         return JsonResponse({'message': 'Product updated successfully'})
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
-
 
 # Function to delete a product
 @csrf_exempt
@@ -128,3 +122,110 @@ def filter_products(request):
     ]
 
     return JsonResponse({'products': product_list})
+
+@csrf_exempt
+@api_view(['POST'])
+def add_review(request):
+    # Extract data from the request body
+    product_id = request.data.get('product_id')
+    customer_id = request.data.get('customer_id')
+    rating = request.data.get('rating')
+    review_text = request.data.get('review_text')
+    
+    # Validate data (make sure the necessary fields are provided)
+    if not product_id or not customer_id or not rating or not review_text:
+        return JsonResponse({"error": "All fields are required."}, status=400)
+
+    try:
+        # Check if the product and customer exist in the database
+        product = Product.objects.get(product_id=product_id)
+        customer = Customer.objects.get(customer_id=customer_id)
+
+        # Validate the rating (should be an integer between 1 and 5)
+        if not (1 <= rating <= 5):
+            return JsonResponse({"error": "Rating must be between 1 and 5."}, status=400)
+
+        # Create the review
+        review = Review.objects.create(
+            product_id=product,
+            customer_id=customer,
+            rating=rating,
+            review_text=review_text
+        )
+
+        # Return success response with created review data
+        return JsonResponse({
+            "message": "Review added successfully.",
+            "review_id": review.review_id,
+            "product_id": product.product_id,
+            "rating": review.rating,
+            "review_text": review.review_text
+        }, status=201)
+
+    except Product.DoesNotExist:
+        return JsonResponse({"error": "Product not found."}, status=404)
+    
+    except Customer.DoesNotExist:
+        return JsonResponse({"error": "Customer not found."}, status=404)
+    
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+@api_view(['GET'])
+def get_reviews(request):
+    product_id = request.GET.get('product_id')
+    
+    # Check if product_id is provided
+    if not product_id:
+        return JsonResponse({'error': 'Product ID is required.'}, status=400)
+
+    try:
+        # Get all reviews for the specified product
+        reviews = Review.objects.filter(product_id=product_id)
+        
+        # Calculate the average rating
+        total_rating = sum(review.rating for review in reviews)
+        average_rating = total_rating / reviews.count() if reviews.exists() else 0
+        
+        # Prepare the list of reviews
+        review_list = [
+            {
+                'review_id': review.review_id,
+                'customer_id': review.customer_id.customer_id,
+                'rating': review.rating,
+                'review': review.review_text,
+                'created_at': review.created_at,
+                'updated_at': review.updated_at
+            }
+            for review in reviews
+        ]
+        
+        # Return response with reviews and average rating
+        return JsonResponse({
+            'reviews': review_list,
+            'average_rating': round(average_rating, 2)
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@api_view(['DELETE'])
+def delete_review(request):
+    review_id=request.GET.get('review_id')
+    try:
+        # Attempt to retrieve the review by its ID
+        review = Review.objects.get(review_id=review_id)
+        
+        # Delete the review
+        review.delete()
+        
+        return JsonResponse({'message': 'Review deleted successfully'}, status=200)
+
+    except Review.DoesNotExist:
+        # If the review with the given ID does not exist
+        return JsonResponse({'error': 'Review not found'}, status=404)
+
+    except Exception as e:
+        # Handle any other unexpected exceptions
+        return JsonResponse({'error': str(e)}, status=500)
+
