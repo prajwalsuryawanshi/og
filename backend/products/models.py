@@ -18,3 +18,19 @@ class Product(models.Model):
 
     def __str__(self):
         return self.product_name
+
+class Review(models.Model):
+    review_id = models.AutoField(primary_key=True)
+    product_id = models.ForeignKey('Product', on_delete=models.CASCADE,db_column='product_id', to_field='product_id')
+    customer_id = models.ForeignKey('customer.Customer', on_delete=models.CASCADE,db_column='customer_id', to_field='customer_id')
+    rating = models.IntegerField()
+    review_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'reviews' 
+        managed = False
+    
+    def __str__(self):
+        return str(self.review_id)  # Return the review_id as a string (for better representation)
