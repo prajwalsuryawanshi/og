@@ -7,7 +7,9 @@ from .views import (
     filter_products,
     add_review,
     get_reviews,
-    delete_review
+    delete_review,
+    add_to_wishlist,
+    remove_from_wishlist
 )
 
 urlpatterns = [
@@ -18,6 +20,7 @@ urlpatterns = [
     path('filter/', filter_products, name='filter_products'),  # Filter products
     path('addreview',add_review,name='addReview'),
     path('getreviews',get_reviews,name= 'getReviews'),
-    path('deleteReview',delete_review,name='deleteReview')
-
+    path('deleteReview',delete_review,name='deleteReview'),
+    path('addwishlist',add_to_wishlist,name= 'addToWishlist'),
+    path('removewishlist',remove_from_wishlist,name= 'removeFromWishlist'),
 ]

@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from .models import Customer
 from orders.models import Order
 from products.models import Product
+from products.views import get_wishlist_products
 
 def get_customer_profile(request):
     customer_id = request.GET.get('customer_id')
@@ -34,6 +35,7 @@ def get_customer_profile(request):
             "postal_code": customer.address.pincode if customer.address else None,
         },
         "previous_orders": [],
+        "wishlist": get_wishlist_products(customer_id),
     }
 
     # Iterate through the previous orders and collect the related product information

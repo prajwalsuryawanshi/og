@@ -5,6 +5,7 @@ from .models import Product,Review
 from customer.models import Customer
 import json
 from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
 
 # Function to list all products
 @api_view(['GET'])
@@ -228,4 +229,76 @@ def delete_review(request):
     except Exception as e:
         # Handle any other unexpected exceptions
         return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+def add_to_wishlist(request):
+    customer_id = request.data.get('customer_id')
+    product_id = request.data.get('product_id')
+
+    # Check if customer_id and product_id are provided
+    if not customer_id or not product_id:
+        return JsonResponse({"error": "Customer ID and Product ID are required"}, status=400)
+
+    # Retrieve the customer object
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+
+    # Check if the product exists
+    product = get_object_or_404(Product, product_id=product_id)
+
+    # Add the product_id to the wishlist if not already present
+    if product_id not in customer.wishlist:
+        customer.wishlist.append(product_id)
+        customer.save()
+        return JsonResponse({"message": f"Product {product_id} added to wishlist"}, status=201)
+    else:
+        return JsonResponse({"message": f"Product {product_id} is already in the wishlist"}, status=200)
+    
+@api_view(['POST'])
+def remove_from_wishlist(request):
+    customer_id = request.data.get('customer_id')
+    product_id = request.data.get('product_id')
+
+    # Check if customer_id and product_id are provided
+    if not customer_id or not product_id:
+        return JsonResponse({"error": "Customer ID and Product ID are required"}, status=400)
+
+    # Retrieve the customer object
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+
+    # Ensure customer.wishlist is an initialized list
+    if customer.wishlist is None:
+        return JsonResponse({"error": "Wishlist is empty"}, status=400)
+
+    # Check if the product is in the wishlist
+    if product_id in customer.wishlist:
+        customer.wishlist.remove(product_id)
+        customer.save()
+        return JsonResponse({"message": f"Product {product_id} removed from wishlist"}, status=200)
+    else:
+        return JsonResponse({"message": f"Product {product_id} not found in the wishlist"}, status=404)
+    
+from products.models import Product
+
+def get_wishlist_products(customer_id):
+    customer = get_object_or_404(Customer, customer_id=customer_id)
+
+    # Check if the wishlist is not empty
+    if not customer.wishlist:
+        return []
+
+    # Retrieve products based on wishlist product IDs
+    products = Product.objects.filter(product_id__in=customer.wishlist)
+    wishlist_products = []
+
+    for product in products:
+        product_info = {
+            "product_id": product.product_id,
+            "name": product.product_name,
+            "description": product.product_description,
+            "price": product.product_price,
+            "image": product.product_images
+        }
+        wishlist_products.append(product_info)
+    
+    return wishlist_products
 
