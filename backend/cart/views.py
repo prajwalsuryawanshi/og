@@ -99,7 +99,7 @@ def view_cart(request):
 
     return Response({'cart_items': cart_data, 'total_cost': total_cost, 'total_qty': total_quantity})
 
-
+# will use for admin
 @api_view(['GET'])
 def view_all_carts(request):
     cart_items = Cart.objects.all()

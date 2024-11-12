@@ -42,7 +42,9 @@ INSTALLED_APPS = [
     'products',
     'category',
     'customer',
-    'cart'
+    'cart',
+    'razorpay',
+    'delhivery'
 ]
 
 MIDDLEWARE = [
@@ -87,7 +89,7 @@ WSGI_APPLICATION = 'og.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'OneGold',
+        'NAME': 'onegold',
         'USER': 'postgres',
         'PASSWORD': 'walker',
         'HOST': 'localhost',
