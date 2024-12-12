@@ -26,7 +26,7 @@ def get_customer_profile(request):
     customer_data = {
         "customer_id": customer.customer_id,
         "name": customer.name,
-        "email": customer.email,
+        "email": customer.email if customer.email else None,
         "phone_no": customer.phone_no,
         "address": {
             "location": customer.address.location if customer.address else None,

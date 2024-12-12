@@ -1,46 +1,71 @@
-from django.shortcuts import render
-from rest_framework.decorators import api_view
-from .models import Order
-from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework import status
-from django.db import transaction
-from .models import Order
-from customer.models import Customer
+from .models import Order, OrderItem
+from customer.models import Customer, Address
 from products.models import Product
+from django.db import transaction
 
-@api_view(['POST'])
-def place_order(request):
-    data = request.data
+class PlaceOrderView(APIView):
+    def post(self, request):
+        data = request.data
 
-    # Validate required fields
-    required_fields = ['customer_id', 'product_id', 'quantity', 'address', 'order_total', 'order_status', 'payment_type']
-    for field in required_fields:
-        if field not in data:
-            return JsonResponse({'error': f'{field} is required'}, status=status.HTTP_400_BAD_REQUEST)
+        # Extract order-level details
+        customer_id = data.get('customer_id')
+        address_id = data.get('address_id')
+        payment_type = data.get('payment_type')
+        order_items = data.get('order_items')  # List of {"product_id": X, "quantity": Y}
 
-    # Check if customer_id exists
-    try:
-        customer = Customer.objects.get(customer_id=data['customer_id'])
-    except Customer.DoesNotExist:
-        return JsonResponse({'error': 'Invalid customer_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if not all([customer_id, payment_type, order_items]):
+            return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check if product_id exists
-    try:
-        product = Product.objects.get(product_id=data['product_id'])
-    except Product.DoesNotExist:
-        return JsonResponse({'error': 'Invalid product_id'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            customer = Customer.objects.get(id=customer_id)
+        except Customer.DoesNotExist:
+            return Response({"error": "Invalid customer ID."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Create the order within a transaction
-    with transaction.atomic():
-        new_order = Order.objects.create(
-            customer_id=customer,
-            product_id=product,
-            quantity=data['quantity'],
-            address=data['address'],
-            order_total=data['order_total'],
-            order_status=data['order_status'],
-            payment_type=data['payment_type'],
-        )
+        if address_id:
+            try:
+                address = Address.objects.get(id=address_id)
+            except Address.DoesNotExist:
+                return Response({"error": "Invalid address ID."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            address = None
 
-    return JsonResponse({'order_id': new_order.order_id}, status=status.HTTP_201_CREATED)
+        with transaction.atomic():
+            # Create the order
+            order = Order.objects.create(
+                customer_id=customer,
+                address_id=address,
+                order_total=0,  # Will calculate this based on order items
+                order_status="Pending",
+                payment_type=payment_type
+            )
 
+            total = 0
+            for item in order_items:
+                product_id = item.get('product_id')
+                quantity = item.get('quantity')
+
+                if not all([product_id, quantity]):
+                    return Response({"error": "Each order item must have a product_id and quantity."}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    product = Product.objects.get(id=product_id)
+                except Product.DoesNotExist:
+                    return Response({"error": f"Invalid product ID {product_id}."}, status=status.HTTP_404_NOT_FOUND)
+
+                if quantity <= 0:
+                    return Response({"error": "Quantity must be a positive integer."}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create the order item
+                OrderItem.objects.create(order=order, product=product, quantity=quantity)
+
+                # Add to total
+                total += product.price * quantity
+
+            # Update the order total
+            order.order_total = total
+            order.save()
+
+        return Response({"message": "Order placed successfully.", "order_id": order.order_id}, status=status.HTTP_201_CREATED)
